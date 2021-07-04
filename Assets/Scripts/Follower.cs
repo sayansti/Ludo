@@ -15,6 +15,9 @@ using Photon.Pun;
      [HideInInspector] public Vector3 InHousePos;
      public bool PawnoutOfTheHouse;
      public bool canCollide;
+
+     private bool _isMoving;
+     private Vector3 axis;
      
      
      public bool checkOpponentCollide = false;
@@ -26,6 +29,8 @@ using Photon.Pun;
     private void Awake()
     {
         InHousePos = transform.position;
+        _isMoving = false;
+        axis = Vector3.zero;
     }
 
     private void Start()
@@ -81,9 +86,7 @@ using Photon.Pun;
             else
             {
                 if (canplay)
-                {
                     StartCoroutine(Hold());
-                }
             }
         }
         else
@@ -106,6 +109,7 @@ using Photon.Pun;
     private void MovePlayerToStartPos()
     {
         canCollide = true;
+        _isMoving = true;
         StartCoroutine(PauseNturnover());
         print("Player will go to start Position");
         //transform.position = manager.StartPos.position;
@@ -125,7 +129,7 @@ using Photon.Pun;
     public IEnumerator check_for_ai_2_turn() {
 
         yield return new WaitForSeconds(1f);
-
+        Debug.Log("VAR check for call");
         switch (_dice.ActiveToken.ToString()) {
 
             case "Blue" :   if(_initialize.tokenBlue == false)
@@ -174,6 +178,8 @@ using Photon.Pun;
             //dice.CheckForTurn();
            
         }
+        _isMoving = true;
+        axis = Vector3.zero;
         //canCollide = true;
         StartCoroutine(PauseNturnover());
         StartCoroutine(TurnOver());
@@ -184,10 +190,13 @@ using Photon.Pun;
     {
         //canplay = false;
         // dice.CheckForTurn();
-        if(_dice.DiceNumber == 6)
-         yield return null;
+        if (_dice.DiceNumber == 6)
+        {
+            yield return null;
+            _dice.DiceButton.interactable = true;
+        }
 
-        _dice.DiceNumber = 0;
+        _dice.DiceNumber = 0;   //TODO NEED TO CHANGE
 
         _dice.diceNumberDisplay.text = "Dice " + _dice.DiceNumber;
 
@@ -203,6 +212,7 @@ using Photon.Pun;
         yield return new WaitForSeconds(0.5f);
         //TurnOver();
         canCollide = true;
+        _isMoving = false;
     }
 
     [PunRPC]
@@ -214,14 +224,8 @@ using Photon.Pun;
     private void OnTriggerEnter(Collider other)
     {
 
-        if (other.gameObject.CompareTag("SafeZone"))//&&(other.gameObject.T))
-        {
-
-            canCollide = false;   
-            //GetComponent<BoxCollider>().enabled = false;
-            //transform.position += new Vector3(0,1f, 0);
-            //transform.localScale = new Vector3(1, 1.25f, 1);
-        }
+        if (other.gameObject.CompareTag("SafeZone"))
+            canCollide = false;
 
         if (canCollide)
         {
@@ -231,21 +235,33 @@ using Photon.Pun;
                 {
                     Debug.LogError("reset the " + other.gameObject.tag + " position");
                     //photonView.RPC("RPC_CheckPlayerCollision",RpcTarget.All); 
+                    Debug.Log(this.name + ":::");
                     ResetPlayer(this);
+                    
                 }       
             }
             else 
             {
-                    var folsc = other.gameObject.GetComponent<Follower>();
+                    //if (!_isMoving) return;
+
+                    if (axis == Vector3.zero)
+                        axis = transform.localPosition;
+
+                    // var folsc = other.gameObject.GetComponent<Follower>();
                     
                     var gameObjectTag = gameObject.tag;
 
                     var localTransform = transform;
-                    localTransform.localScale = new Vector3(1.4f, 2, 1.4f);
-
+                    localTransform.localScale = new Vector3(1.4f, 1.4f, 1.4f);
+                    
+                    
                     switch (gameObjectTag)
                     {
                         case "BluePawn" : localTransform.localPosition += new Vector3(0.74f, 0, 0.74f);
+                            var xaxis = Mathf.Clamp(localTransform.localPosition.x, axis.x - 0.74f, axis.x + 0.74f);
+                            var zaxis = Mathf.Clamp(localTransform.localPosition.z, axis.z - 0.74f, axis.z + 0.74f);
+                            Debug.Log("xaxis " + xaxis + ": " + zaxis + ":" + gameObject.name);
+                            localTransform.localPosition = new Vector3(xaxis, 9.5f, zaxis);
                             break;
                         
                         case "RedPawn" : localTransform.localPosition += new Vector3(-0.74f, 0, 0.74f);
@@ -264,6 +280,8 @@ using Photon.Pun;
             }
         }
     }
+    
+    
     public void CheckPlayerCollision()
     {
         checkOpponentCollide = true;

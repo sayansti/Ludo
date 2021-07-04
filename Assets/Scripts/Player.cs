@@ -18,8 +18,9 @@ public class Player : MonoBehaviourPun
     
     public static void RefreshInstance(ref Player player,Player prefab)
     {
-        var positon = prefab.transform.position;
-        var rotation = prefab.transform.rotation;
+        var transform1 = prefab.transform;
+        var positon = transform1.position;
+        var rotation = transform1.rotation;
         if(player != null)
         {
             // switch(player.PlayerToken)
@@ -33,9 +34,9 @@ public class Player : MonoBehaviourPun
             //     case Dice.Tokens.Yellow:      
             //     break;
             // }            
-                positon = player.transform.position;
-                rotation = player.transform.rotation;
-                PhotonNetwork.Destroy(player.gameObject);
+            positon = player.transform.position;
+            rotation = player.transform.rotation;
+            PhotonNetwork.Destroy(player.gameObject);
         }
         player = PhotonNetwork.Instantiate(prefab.gameObject.name,positon,rotation).GetComponent<Player>();
     }
